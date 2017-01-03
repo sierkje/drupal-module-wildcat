@@ -1,0 +1,9 @@
+name: "Wildcat"
+core: 8.x
+type: modules
+package: "Wildcat"
+description: "Provides common, shared functionality and configuration for Wildcat-flavored sites."
+dependencies:
+  # config dependencies
+  - metatag
+  - node
