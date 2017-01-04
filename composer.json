@@ -15,8 +15,5 @@
     "branch-alias": {
       "dev-8.x-0.x": "0.0.x-dev"
     }
-  },
-  "require": {
-    "drupal/metatag": "^1.0"
   }
 }
