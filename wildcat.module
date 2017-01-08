@@ -1,0 +1,231 @@
+<?php
+
+/**
+ * @file
+ * Provides a nicer experience for Wildcat-flavored sites.
+ */
+
+use Drupal\Core\Block\BlockPluginInterface;
+use Drupal\Core\Entity\EntityDisplayModeInterface;
+use Drupal\Core\Entity\EntityFormInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\user\RoleInterface;
+
+/**
+ * Implements hook_help().
+ */
+function wildcat_help($route_name, RouteMatchInterface $route_match) {
+  // Route needs help if the route name starts with either
+  // 'entity.entity_form_display.', or 'entity.entity_view_display.'.
+  foreach (['form', 'view'] as $type) {
+    if (strpos($route_name, "entity.entity_{$type}_display.") === 0) {
+      /** @var \Drupal\wildcat\Helper\DisplayModeHelperInterface $helper */
+      $helper = \Drupal::service('wildcat.helper.display_mode');
+
+      return $helper->getModeHelp($route_name, $route_match);
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Implements hook_modules_installed().
+ */
+function wildcat_modules_installed(array $modules) {
+  if (in_array('node', $modules)) {
+    wildcat_set_node_view_modes_as_internal();
+  }
+  if (in_array('token', $modules)) {
+    wildcat_set_token_view_modes_as_internal();
+  }
+}
+
+/**
+ * Implements hook_entity_load().
+ */
+function wildcat_entity_load(array $entities) {
+  if (\Drupal::moduleHandler()->moduleExists('path')) {
+    /** @var \Drupal\wildcat\Helper\PathAliasHelperInterface $helper */
+    static $helper;
+    if (NULL === $helper) {
+      // Ensure that the same helper instance is used every time during a
+      // request, this prevents setting aliases on entities more than once.
+      $helper = \Drupal::service('wildcat.helper.path_alias');
+    }
+    // Make sure that a path alias is set for each entity.
+    $helper->ensureEntitiesHavePathAlias($entities);
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wildcat_form_alter(array &$form, FormStateInterface $form_state) {
+  $form_object = $form_state->getFormObject();
+  $form_needs_description_element = FALSE;
+
+  if ($form_object instanceof EntityFormInterface) {
+    $entity = $form_object->getEntity();
+    // Check whether the form needs a description element.
+    if (in_array($form_object->getOperation(), ['default', 'add', 'edit'])) {
+      if ($entity instanceof EntityDisplayModeInterface) {
+        // Display modes have descriptions.
+        $form_needs_description_element = TRUE;
+      }
+      elseif ($entity instanceof RoleInterface) {
+        // User roles have descriptions.
+        $form_needs_description_element = TRUE;
+      }
+    }
+
+    // Nothing else to do if no description element is needed.
+    if (!$form_needs_description_element) {
+      return;
+    }
+
+    // Add a form element to add/edit the description of an entity.
+    $form['description'] = [
+      '#type' => 'textarea',
+      '#title' => t('Description'),
+      '#description' => t('Additional relevant information about this @entity_type, such as where it is used and what it is for.', [
+        '@entity_type' => $entity->getEntityType()->getSingularLabel(),
+      ]),
+      '#rows' => 2,
+      '#default_value' => $entity
+        ->getThirdPartySetting('wildcat', 'description'),
+    ];
+
+    // Add a submit callback to update the description of an entity.
+    $form['actions']['submit']['#submit'][] = 'wildcat_save_entity_description';
+  }
+}
+
+/**
+ * Form submit callback for wildcat_form_alter().
+ *
+ * Saves or updates the description of a configuration entity and invalidate
+ * relevant caching.
+ *
+ * @param array $form
+ *   The complete form.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The current form state.
+ *
+ * @see wildcat_form_alter()
+ */
+function wildcat_save_entity_description(array &$form, FormStateInterface $form_state) {
+  /** @var \Drupal\Core\Entity\EntityForm $form_object */
+  $form_object = $form_state->getFormObject();
+  /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface $config_entity */
+  $config_entity = $form_object->getEntity();
+  /** @var string $description */
+  $description = $form_state->getValue('description');
+  $config_entity->setThirdPartySetting('wildcat', 'description', $description)
+    ->save();
+
+  /** @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface $invalidator */
+  $invalidator = \Drupal::service('cache_tags.invalidator');
+  // The help text block is render cached, so invalidate the relevant cache tag.
+  $invalidator->invalidateTags(['block_view:help_block']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function wildcat_form_user_form_alter(array &$form) {
+  if (isset($form['account']['roles'])) {
+    /** @var \Drupal\wildcat\Helper\FormHelperInterface $helper */
+    $helper = \Drupal::service('wildcat.helper.form');
+    // Ensure the standard process functions run first.
+    $additional = ['wildcat_add_role_descriptions'];
+    $helper->addAfterStandard($form['account']['roles'], $additional);
+  }
+}
+
+/**
+ * Element process callback for wildcat_form_user_form_alter().
+ *
+ * Sets descriptions for role checkboxes on user_form.
+ *
+ * @param array $element
+ *   The element to process.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The current form state.
+ * @param array $complete_form
+ *   The complete form.
+ *
+ * @return array
+ *   The processed element.
+ *
+ * @see wildcat_form_user_form_alter()
+ */
+function wildcat_add_role_descriptions(array $element, FormStateInterface $form_state, array &$complete_form) {
+  /** @var \Drupal\user\RoleStorageInterface $role_storage */
+  $role_storage = \Drupal::entityTypeManager()->getStorage('user_role');
+  // Try to add a description for each individual role.
+  foreach (Element::children($element) as $role_id) {
+    // Don't overwrite any existing description.
+    if (empty($element[$role_id]['#description'])) {
+      /** @var \Drupal\user\RoleInterface $role */
+      $role = $role_storage->load($role_id);
+      $element[$role_id]['#description'] = $role
+        ->getThirdPartySetting('wildcat', 'description');
+    }
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function wildcat_block_view_alter(array &$build, BlockPluginInterface $block) {
+  /** @var \Drupal\Core\Render\RendererInterface $renderer */
+  $renderer = \Drupal::service('renderer');
+  $renderer->addCacheableDependency($build, $block);
+
+  // Always add block_view:BASE_PLUGIN_ID as a cache tag.
+  $build['#cache']['tags'][] = 'block_view:' . $block->getBaseId();
+
+  // If the plugin is a derivative, add block_view:FULL_PLUGIN_ID as well.
+  if ($block->getDerivativeId()) {
+    $build['#cache']['tags'][] = 'block_view:' . $block->getPluginId();
+  }
+}
+
+/**
+ * Implements template_preprocess_block().
+ */
+function wildcat_preprocess_block(array &$variables) {
+  // Use the plugin id for the 'data-block-plugin-id' attribute.
+  $plugin_id = $variables['elements']['#plugin_id'];
+  $variables['attributes']['data-block-plugin-id'] = $plugin_id;
+}
+
+/**
+ * Sets 'rss' and 'search_index' view modes for nodes as internal.
+ *
+ * @see wildcat_install()
+ * @see wildcat_modules_installed()
+ */
+function wildcat_set_node_view_modes_as_internal() {
+  /** @var \Drupal\wildcat\Helper\DisplayModeHelperInterface $helper */
+  $helper = \Drupal::service('wildcat.helper.display_mode');
+  $helper
+    ->setModeAsInternal('view', ['node'], 'rss')
+    ->setModeAsInternal('view', ['node'], 'search_index');
+}
+
+/**
+ * Sets 'token' view modes for all entities as internal.
+ *
+ * @see wildcat_install()
+ * @see wildcat_modules_installed()
+ */
+function wildcat_set_token_view_modes_as_internal() {
+  /** @var \Drupal\wildcat\Helper\DisplayModeHelperInterface $helper */
+  $helper = \Drupal::service('wildcat.helper.display_mode');
+  $helper->setModeAsInternal('view', [], 'token');
+}

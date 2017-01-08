@@ -1,0 +1,22 @@
+services:
+
+  wildcat.helper.display_mode:
+    # Should extend \Drupal\wildcat\Helper\DisplayModeHelperInterface
+    class: 'Drupal\wildcat\Helper\DisplayModeHelper'
+    arguments: ['@entity_type.manager']
+
+  wildcat.helper.form:
+    # Should extend \Drupal\wildcat\Helper\FormHelperInterface
+    class: '\Drupal\wildcat\Helper\FormHelper'
+    arguments: ['@element_info']
+
+  wildcat.helper.path_alias:
+    # Should extend \Drupal\wildcat\Helper\PathAliasHelperInterface
+    class: 'Drupal\wildcat\Helper\PathAliasHelper'
+    arguments: ['path.alias_storage']
+
+  wildcat.route_subscriber:
+    class: 'Drupal\wildcat\Routing\RouteSubscriber'
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: 'event_subscriber' }
