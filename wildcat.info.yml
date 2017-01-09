@@ -3,3 +3,7 @@ type: module
 description: "Provides common, shared functionality and configuration for Wildcat-flavored sites."
 package: "Wildcat"
 core: 8.x
+dependencies:
+  - node
+  - block
+  - filter
