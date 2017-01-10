@@ -38,7 +38,7 @@ function wildcat_preprocess_block(array &$variables) {
  */
 function wildcat_entity_load(array $entities) {
   /** @var \Drupal\wildcat\WildcatHelperInterface $helper */
-  $helper = \Drupal::service('wildcat.helper.path_alias');
+  $helper = \Drupal::service('wildcat.helper');
   // Make sure that a path alias is set for each entity.
   $helper->ensureEntitiesHavePathAlias($entities);
 }
