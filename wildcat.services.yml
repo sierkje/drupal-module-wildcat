@@ -2,7 +2,7 @@ services:
   wildcat.helper:
     # Should extend \Drupal\wildcat\WildcatHelperInterface
     class: 'Drupal\wildcat\WildcatHelper'
-    arguments: ['path.alias_storage']
+    arguments: ['@path.alias_storage']
 
   wildcat.route_subscriber:
     class: 'Drupal\wildcat\Routing\RouteSubscriber'
