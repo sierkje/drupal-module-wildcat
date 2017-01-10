@@ -1,15 +1,15 @@
 <?php
 
-namespace Drupal\wildcat\Helper;
+namespace Drupal\wildcat;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Path\AliasStorageInterface;
 use Drupal\path\Plugin\Field\FieldType\PathFieldItemList;
 
 /**
- * Default path alias helper implementation.
+ * Default Wildcat helper implementation.
  */
-class PathAliasHelper implements PathAliasHelperInterface {
+class WildcatHelper implements WildcatHelperInterface {
 
   /**
    * The path alias storage.
@@ -31,7 +31,7 @@ class PathAliasHelper implements PathAliasHelperInterface {
   protected $entitiesWithAlias = [];
 
   /**
-   * Constructs a PathAliasHelper instance.
+   * Constructs a WildcatHelper instance.
    *
    * @param \Drupal\Core\Path\AliasStorageInterface $path_alias_storage
    *   The path alias storage.

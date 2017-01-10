@@ -1,11 +1,11 @@
 <?php
 
-namespace Drupal\wildcat\Helper;
+namespace Drupal\wildcat;
 
 /**
- * Provides an interface for path alias helpers.
+ * Provides an interface for Wildcat helpers.
  */
-interface PathAliasHelperInterface {
+interface WildcatHelperInterface {
 
   /**
    * Ensures that all fieldable entities have a path alias.
