@@ -2,6 +2,7 @@
 
 namespace Drupal\wildcat;
 
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Path\AliasStorageInterface;
 use Drupal\path\Plugin\Field\FieldType\PathFieldItemList;
@@ -12,11 +13,18 @@ use Drupal\path\Plugin\Field\FieldType\PathFieldItemList;
 class WildcatHelper implements WildcatHelperInterface {
 
   /**
-   * The path alias storage.
+   * The path alias storage service.
    *
    * @var \Drupal\Core\Path\AliasStorageInterface.
    */
   protected $pathAliasStorage;
+
+  /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
   /**
    * The UUIDs of entities for which aliases have already been looked up.
@@ -34,10 +42,13 @@ class WildcatHelper implements WildcatHelperInterface {
    * Constructs a WildcatHelper instance.
    *
    * @param \Drupal\Core\Path\AliasStorageInterface $path_alias_storage
-   *   The path alias storage.
+   *   The path alias storage service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
    */
-  public function __construct(AliasStorageInterface $path_alias_storage) {
+  public function __construct(AliasStorageInterface $path_alias_storage, EntityTypeManagerInterface $entity_type_manager) {
     $this->pathAliasStorage = $path_alias_storage;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -82,6 +93,24 @@ class WildcatHelper implements WildcatHelperInterface {
     }
 
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function ensureEditorFilter() {
+    $format_storage = $this->entityTypeManager->getStorage('filter_format');
+    $formats = $format_storage->loadMultiple(['basic_html', 'full_html']);
+    /** @var \Drupal\filter\FilterFormatInterface $format */
+    foreach ($formats as $format) {
+      $format->setFilterConfig('editor_file_reference', [
+        'id' => 'editor_file_reference',
+        'provider' => 'editor',
+        'status' => TRUE,
+        'weight' => 11,
+        'settings' => [],
+      ]);
+    }
   }
 
 }

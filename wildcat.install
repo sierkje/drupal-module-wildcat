@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * Provides install, update, and uninstall functions for the Wildcat module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function wildcat_install() {
+  if (\Drupal::moduleHandler()->moduleExists('editor')) {
+    wildcat_modules_installed(['editor']);
+  }
+}

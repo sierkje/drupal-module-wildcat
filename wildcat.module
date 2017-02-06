@@ -42,3 +42,15 @@ function wildcat_entity_load(array $entities) {
   // Make sure that a path alias is set for each entity.
   $helper->ensureEntitiesHavePathAlias($entities);
 }
+
+/**
+ * Implements hook_modules_installed().
+ */
+function wildcat_modules_installed($modules) {
+  if (in_array('editor', $modules)) {
+    /** @var \Drupal\wildcat\WildcatHelperInterface $helper */
+    $helper = \Drupal::service('wildcat.helper');
+    // Add the 'editor' filter to the formats that need it.
+    $helper->ensureEditorFilter();
+  }
+}

@@ -22,4 +22,11 @@ interface WildcatHelperInterface {
    */
   public function ensureEntitiesHavePathAlias(array $entities);
 
+  /**
+   * Ensure that the filter formats have the needed editor filter.
+   *
+   * @return $this
+   */
+  public function ensureEditorFilter();
+
 }
