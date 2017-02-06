@@ -2,6 +2,7 @@
 
 namespace Drupal\wildcat\Controller;
 
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -12,7 +13,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Dynamically generates titles for various Field UI routes.
  */
-class FieldUiTitleController{
+class FieldUiTitleController implements ContainerInjectionInterface {
 
   use StringTranslationTrait;
 
