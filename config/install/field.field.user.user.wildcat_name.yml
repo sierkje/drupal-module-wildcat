@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.user.wildcat_name
+  module:
+    - user
+id: user.user.wildcat_name
+field_name: wildcat_name
+entity_type: user
+bundle: user
+label: Name
+description: 'Entering your real name is completely optional. Entering a nickname, or just your first name is perfectly okay. But note that site administrators might need it to determine when approving your new account.'
+required: true
+translatable: false
+default_value:
+  -
+    value: Anonymous
+default_value_callback: ''
+settings: {  }
+field_type: string
+

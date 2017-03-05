@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.user.compact
+    - field.field.user.user.wildcat_name
+  module:
+    - user
+id: user.user.compact
+targetEntityType: user
+bundle: user
+mode: compact
+content:
+  wildcat_name:
+    weight: 0
+    label: visually_hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    type: string
+    region: content
+hidden:
+  member_for: true
